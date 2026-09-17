@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -674,6 +675,10 @@ function playVictory() {
 }
 
 // ══════════════════ PLAYER REGISTRY (localStorage) ══
+// Only the top MAX_SAVED_PLAYERS by best score are kept — everyone else
+// (name + photo) gets pruned automatically whenever a score is saved.
+const MAX_SAVED_PLAYERS = 10;
+
 function loadRegistry() {
   try { return JSON.parse(localStorage.getItem('snakeRegistry')||'{}'); }
   catch(e){ return {}; }
@@ -685,8 +690,16 @@ function getPlayer(name) {
   const reg = loadRegistry();
   return reg[name.trim().toLowerCase()] || null;
 }
+function pruneRegistry(reg) {
+  const keys = Object.keys(reg);
+  if (keys.length <= MAX_SAVED_PLAYERS) return reg;
+  keys.sort((a, b) => (reg[b].bestScore||0) - (reg[a].bestScore||0));
+  const pruned = {};
+  keys.slice(0, MAX_SAVED_PLAYERS).forEach(k => pruned[k] = reg[k]);
+  return pruned;
+}
 function upsertPlayer(name, photo, bestScore) {
-  const reg = loadRegistry();
+  let reg = loadRegistry();
   const key = name.trim().toLowerCase();
   const existing = reg[key];
   reg[key] = {
@@ -694,6 +707,7 @@ function upsertPlayer(name, photo, bestScore) {
     photo: photo ?? (existing ? existing.photo : null),
     bestScore: Math.max(bestScore||0, existing ? existing.bestScore||0 : 0)
   };
+  reg = pruneRegistry(reg);
   saveRegistry(reg);
 }
 
