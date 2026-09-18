@@ -355,6 +355,37 @@ input[type=file]{display:none;}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
 ::-webkit-scrollbar-thumb:hover{background:var(--accent);}
 </style>
+    <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { initializeFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBFxIFfgtTYT8vb42rPIQ-eJClzm73xttw",
+    authDomain: "freshmeat-6bfd0.firebaseapp.com",
+    projectId: "freshmeat-6bfd0",
+    storageBucket: "freshmeat-6bfd0.firebasestorage.app",
+    messagingSenderId: "329301869183",
+    appId: "1:329301869183:web:5145e6b73cc5a85e85b54a"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = initializeFirestore(app, { experimentalForceLongPolling: true, useFetchStreams: false });
+
+  window.snakeFetchRegistry = async function () {
+    const snap = await getDoc(doc(db, "snakePlayers", "registry"));
+    return snap.exists() && snap.data().players ? snap.data().players : {};
+  };
+  window.snakeSaveRegistry = async function (players) {
+    await setDoc(doc(db, "snakePlayers", "registry"), { players, updatedAt: Date.now() });
+  };
+  window.snakeFetchLeaderboard = async function () {
+    const snap = await getDoc(doc(db, "snakePlayers", "leaderboard"));
+    return snap.exists() && Array.isArray(snap.data().entries) ? snap.data().entries : [];
+  };
+  window.snakeSaveLeaderboard = async function (entries) {
+    await setDoc(doc(db, "snakePlayers", "leaderboard"), { entries, updatedAt: Date.now() });
+  };
+</script>
 </head>
 <body>
 
@@ -679,16 +710,16 @@ function playVictory() {
 // (name + photo) gets pruned automatically whenever a score is saved.
 const MAX_SAVED_PLAYERS = 10;
 
-function loadRegistry() {
+let playerRegistry = {};
+function loadLocalRegistryCache() {
   try { return JSON.parse(localStorage.getItem('snakeRegistry')||'{}'); }
   catch(e){ return {}; }
 }
-function saveRegistry(reg) {
+function saveLocalRegistryCache(reg) {
   try { localStorage.setItem('snakeRegistry', JSON.stringify(reg)); } catch(e){}
 }
 function getPlayer(name) {
-  const reg = loadRegistry();
-  return reg[name.trim().toLowerCase()] || null;
+  return playerRegistry[name.trim().toLowerCase()] || null;
 }
 function pruneRegistry(reg) {
   const keys = Object.keys(reg);
@@ -699,16 +730,64 @@ function pruneRegistry(reg) {
   return pruned;
 }
 function upsertPlayer(name, photo, bestScore) {
-  let reg = loadRegistry();
   const key = name.trim().toLowerCase();
-  const existing = reg[key];
-  reg[key] = {
+  const existing = playerRegistry[key];
+  playerRegistry[key] = {
     name,
     photo: photo ?? (existing ? existing.photo : null),
     bestScore: Math.max(bestScore||0, existing ? existing.bestScore||0 : 0)
   };
-  reg = pruneRegistry(reg);
-  saveRegistry(reg);
+  playerRegistry = pruneRegistry(playerRegistry);
+  saveLocalRegistryCache(playerRegistry);
+  persistRegistryCloud();
+}
+
+let registryPersistInFlight = false, registryPersistQueued = false;
+async function persistRegistryCloud() {
+  if (typeof window.snakeSaveRegistry !== 'function') return;
+  registryPersistQueued = true;
+  if (registryPersistInFlight) return;
+  registryPersistInFlight = true;
+  while (registryPersistQueued) {
+    registryPersistQueued = false;
+    try { await window.snakeSaveRegistry(playerRegistry); }
+    catch(e){ console.warn('Could not sync player registry to cloud:', e); }
+  }
+  registryPersistInFlight = false;
+}
+async function loadRegistryFromCloud() {
+  if (typeof window.snakeFetchRegistry !== 'function') { playerRegistry = loadLocalRegistryCache(); return; }
+  try {
+    const cloudReg = await window.snakeFetchRegistry();
+    playerRegistry = (cloudReg && Object.keys(cloudReg).length) ? cloudReg : loadLocalRegistryCache();
+    saveLocalRegistryCache(playerRegistry);
+  } catch(e) {
+    console.warn('Could not fetch player registry from cloud, using local cache:', e);
+    playerRegistry = loadLocalRegistryCache();
+  }
+}
+
+let lbPersistInFlight = false, lbPersistQueued = false;
+async function persistLeaderboardCloud() {
+  if (typeof window.snakeSaveLeaderboard !== 'function') return;
+  lbPersistQueued = true;
+  if (lbPersistInFlight) return;
+  lbPersistInFlight = true;
+  while (lbPersistQueued) {
+    lbPersistQueued = false;
+    try { await window.snakeSaveLeaderboard(leaderboard); }
+    catch(e){ console.warn('Could not sync leaderboard to cloud:', e); }
+  }
+  lbPersistInFlight = false;
+}
+async function loadLeaderboardFromCloud() {
+  if (typeof window.snakeFetchLeaderboard !== 'function') return;
+  try {
+    const cloudLb = await window.snakeFetchLeaderboard();
+    if (Array.isArray(cloudLb)) leaderboard = cloudLb.slice(0,3);
+  } catch(e) {
+    console.warn('Could not fetch leaderboard from cloud:', e);
+  }
 }
 
 // ══════════════════ AVATAR HELPERS ══════════════
@@ -735,10 +814,15 @@ function makeAvatarCanvas(name,size=52){
   const grd=cx.createLinearGradient(0,0,size,size);
   grd.addColorStop(0,c1);grd.addColorStop(1,c2);
   cx.fillStyle=grd;cx.fillRect(0,0,size,size);
-  cx.fillStyle='rgba(255,255,255,.92)';
   cx.font=`bold ${Math.floor(size*.38)}px DM Sans,sans-serif`;
   cx.textAlign='center';cx.textBaseline='middle';
-  cx.fillText(initials(name||'?'),size/2,size/2+1);
+  const txt=initials(name||'?');
+  const tx=size/2,ty=size/2+1;
+  cx.lineWidth=Math.max(2,size*.06);
+  cx.strokeStyle='rgba(0,0,0,.45)';
+  cx.strokeText(txt,tx,ty);
+  cx.fillStyle='rgba(255,255,255,.95)';
+  cx.fillText(txt,tx,ty);
   return c;
 }
 function renderAvatarInEl(el,photoUrl,name,size){
@@ -754,7 +838,27 @@ function renderAvatarInEl(el,photoUrl,name,size){
 }
 
 // ══════════════════ AUTH STATE ═══════════════════
-let authName = '';
+  function compressImageFile(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxDim) { height = Math.round(height * maxDim / width); width = maxDim; }
+        else if (height > maxDim) { width = Math.round(width * maxDim / height); height = maxDim; }
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}let authName = '';
 let authPhoto = null;
 let pendingRegPhoto = null;
 
@@ -783,14 +887,12 @@ function showRegisterScreen(name){
 const regPhotoInput = document.getElementById('reg-photo-input');
 const regAvPreview  = document.getElementById('reg-avatar-preview');
 regAvPreview.addEventListener('click', () => regPhotoInput.click());
-regPhotoInput.addEventListener('change', e => {
+regPhotoInput.addEventListener('change', async e => {
   const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload = ev => {
-    pendingRegPhoto = ev.target.result;
+  try {
+    pendingRegPhoto = await compressImageFile(f, 160, 0.75);
     renderAvatarInEl(regAvPreview, pendingRegPhoto, startNameInput.value.trim(), 52);
-  };
-  r.readAsDataURL(f);
+  } catch(err) { console.error(err); }
 });
 
 document.getElementById('btn-register').addEventListener('click', () => {
@@ -824,16 +926,14 @@ function showLoginScreen(name, player){
 }
 
 const loginPhotoInput = document.getElementById('login-photo-input');
-loginPhotoInput.addEventListener('change', e => {
+loginPhotoInput.addEventListener('change', async e => {
   const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload = ev => {
-    loginPendingPhoto = ev.target.result;
+  try {
+    loginPendingPhoto = await compressImageFile(f, 160, 0.75);
     const bigAv = document.getElementById('login-avatar-big');
     renderAvatarInEl(bigAv, loginPendingPhoto, startNameInput.value.trim(), 66);
     document.getElementById('login-photo-updated-msg').textContent = '✓ Photo updated!';
-  };
-  r.readAsDataURL(f);
+  } catch(err) { console.error(err); }
 });
 
 document.getElementById('btn-login-play').addEventListener('click', () => {
@@ -866,11 +966,12 @@ function refreshEndAvatar(){
 }
 endNameInput.addEventListener('input', refreshEndAvatar);
 endAvPreview.addEventListener('click', () => endPhotoInput.click());
-endPhotoInput.addEventListener('change', e => {
+endPhotoInput.addEventListener('change', async e => {
   const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=ev=>{ sessionPhotoEnd=ev.target.result; refreshEndAvatar(); };
-  r.readAsDataURL(f);
+  try {
+    sessionPhotoEnd = await compressImageFile(f, 160, 0.75);
+    refreshEndAvatar();
+  } catch(err) { console.error(err); }
 });
 
 // ══════════════════ GAME CONFIG ═════════════════
@@ -997,6 +1098,7 @@ function saveScore(name){
     leaderboard.sort((a,b)=>b.score-a.score);
     leaderboard=leaderboard.slice(0,3);
     renderLeaderboard();
+    persistLeaderboardCloud();
     if(isNewRecord){
       document.getElementById('ov-end').classList.add('hide');
       showCelebration(playerName, photo, score, prevBest, ()=>showStartScreen(playerName));
@@ -1304,7 +1406,18 @@ document.getElementById('cel-continue').addEventListener('click',()=>{
 });
 
 // ══════════════════ BOOT ════════════════════════
-init();draw();updateLayerState();renderLeaderboard();
+// ══════════════════ BOOT ════════════════════════
+async function boot(){
+  const btn = document.getElementById('btn-lookup');
+  const inp = document.getElementById('inp-name-start');
+  btn.disabled = true; btn.textContent = 'Loading…';
+  inp.placeholder = 'Loading players…'; inp.disabled = true;
+  await Promise.all([loadRegistryFromCloud(), loadLeaderboardFromCloud()]);
+  btn.disabled = false; btn.textContent = 'Next →';
+  inp.placeholder = 'Your name…'; inp.disabled = false;
+  init();draw();updateLayerState();renderLeaderboard();
+}
+boot();
 </script>
 </body>
 </html>
