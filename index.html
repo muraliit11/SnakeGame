@@ -757,15 +757,19 @@ async function persistRegistryCloud() {
   registryPersistInFlight = false;
 }
 let cloudFetchError = null;
+let cloudDebugInfo = '';
 async function loadRegistryFromCloud() {
-  if (typeof window.snakeFetchRegistry !== 'function') { playerRegistry = loadLocalRegistryCache(); return; }
+  if (typeof window.snakeFetchRegistry !== 'function') { playerRegistry = loadLocalRegistryCache(); cloudDebugInfo = 'no snakeFetchRegistry fn'; return; }
   try {
     const cloudReg = await window.snakeFetchRegistry();
+    const n = cloudReg ? Object.keys(cloudReg).length : 0;
+    cloudDebugInfo = 'registry fetch ok, ' + n + ' players: [' + (cloudReg ? Object.keys(cloudReg).join(',') : '') + ']';
     playerRegistry = (cloudReg && Object.keys(cloudReg).length) ? cloudReg : loadLocalRegistryCache();
     saveLocalRegistryCache(playerRegistry);
   } catch(e) {
     console.warn('Could not fetch player registry from cloud, using local cache:', e);
     cloudFetchError = (e && e.message) ? e.message : String(e);
+    cloudDebugInfo = 'registry fetch THREW: ' + cloudFetchError;
     playerRegistry = loadLocalRegistryCache();
   }
 }
@@ -1420,12 +1424,11 @@ async function boot(){
   btn.disabled = false; btn.textContent = 'Next →';
   inp.placeholder = 'Your name…'; inp.disabled = false;
   init();draw();updateLayerState();renderLeaderboard();
-  if (cloudFetchError) {
-    const banner = document.createElement('div');
-    banner.style.cssText = 'position:fixed;top:52px;left:0;right:0;z-index:200;background:#f24e1e;color:#fff;font-family:"DM Mono",monospace;font-size:11px;padding:8px 14px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.4);';
-    banner.textContent = '⚠️ Cloud sync failed: ' + cloudFetchError + ' — showing local data only';
-    document.body.appendChild(banner);
-  }
+  const banner = document.createElement('div');
+  const failed = !!cloudFetchError;
+  banner.style.cssText = 'position:fixed;top:52px;left:0;right:0;z-index:200;background:' + (failed?'#f24e1e':'#0acf97') + ';color:#111;font-family:"DM Mono",monospace;font-size:10px;padding:6px 10px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.4);word-break:break-word;';
+  banner.textContent = 'DEBUG: ' + cloudDebugInfo;
+  document.body.appendChild(banner);
 }
 boot();
 </script>
