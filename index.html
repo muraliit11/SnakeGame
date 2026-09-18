@@ -386,6 +386,8 @@ input[type=file]{display:none;}
   window.snakeSaveLeaderboard = async function (entries) {
     await setDoc(doc(db, "snakePlayers", "leaderboard"), { entries, updatedAt: Date.now() });
   };
+  window.firebaseReady = true;
+  window.dispatchEvent(new Event('firebaseReady'));
 </script>
 </head>
 <body>
@@ -1430,7 +1432,13 @@ async function boot(){
   banner.textContent = 'DEBUG: ' + cloudDebugInfo;
   document.body.appendChild(banner);
 }
-boot();
+if (window.firebaseReady) {
+  boot();
+} else {
+  window.addEventListener('firebaseReady', boot, { once: true });
+  // Safety net: if Firebase fails to load at all within 6s, boot anyway using local cache
+  setTimeout(() => { if (!window.firebaseReady) boot(); }, 6000);
+}
 </script>
 </body>
 </html>
