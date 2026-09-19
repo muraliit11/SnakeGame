@@ -354,9 +354,10 @@ input[type=file]{display:none;}
   :root{--canvas-size:min(92vw, 450px);}
   .canvas-wrap{max-width:calc(100vw - 20px);margin:0 auto;}
   .canvas-wrap canvas{width:var(--canvas-size)!important;height:var(--canvas-size)!important;max-width:100%!important;}
-  .dpad-wrap{display:flex;transform:scale(.78);transform-origin:top center;margin:0 0 -20px;padding:7px 0 0;}
-  .dpad-btn,.dpad-center{width:48px;height:48px;}
-  .dpad-btn{font-size:17px;}
+  .dpad-wrap{display:flex;transform:none;transform-origin:center top;margin:10px 0 6px;padding:10px 0 12px;gap:6px;}
+  .dpad-row{gap:6px;}
+  .dpad-btn,.dpad-center{width:64px;height:64px;}
+  .dpad-btn{font-size:30px;border-radius:12px;}
   .footer{display:none;}
 }
 @media(max-width: 440px){
@@ -377,7 +378,9 @@ input[type=file]{display:none;}
 @media(max-width: 440px) and (max-height: 750px){
   :root{--canvas-size:min(90vw, 350px);}
   .game-col{gap:5px;}
-  .dpad-wrap{transform:scale(.72);margin-bottom:-30px;}
+  .dpad-wrap{margin-top:8px;margin-bottom:2px;padding-top:8px;padding-bottom:8px;}
+  .dpad-btn,.dpad-center{width:60px;height:60px;}
+  .dpad-btn{font-size:28px;}
   .toolbar{padding:3px 6px;font-size:9px;}
 }
 @supports (padding: max(0px)){
