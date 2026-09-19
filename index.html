@@ -126,6 +126,14 @@ input[type=file]{display:none;}
 .ov-spill.on{border-color:var(--accent);background:rgba(162,89,255,.22);color:var(--text);}
 .ov-spill .badge{display:block;font-size:9px;color:var(--muted);margin-top:2px;}
 .ov-spill.on .badge{color:var(--accent);}
+/* Mobile speed selector for returning players */
+.mobile-speed{display:none;width:100%;margin:2px 0 2px;}
+.mobile-speed-title{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;text-align:left;}
+.mobile-speed-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;width:100%;}
+.mobile-speed-btn{min-width:0;padding:6px 2px;border-radius:6px;border:1.5px solid var(--border);background:rgba(255,255,255,.025);color:var(--muted);font:500 9px 'DM Mono',monospace;text-align:center;cursor:pointer;user-select:none;line-height:1.2;}
+.mobile-speed-btn.on{border-color:var(--accent);background:rgba(162,89,255,.22);color:var(--text);}
+.mobile-speed-btn .ms-badge{display:block;font-size:7px;margin-top:2px;color:var(--muted);}
+.mobile-speed-btn.on .ms-badge{color:var(--accent);}
 
 .btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:7px;padding:10px 0;font-family:'DM Sans',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:opacity .15s,transform .1s;letter-spacing:.02em;}
 .btn:hover{opacity:.88;transform:translateY(-1px);}
@@ -364,6 +372,7 @@ input[type=file]{display:none;}
   .cel-card{padding:22px 18px;max-width:88%;}
   .cel-score-num{font-size:50px;}
   .ov{padding:12px;}
+  .mobile-speed{display:block;}
 }
 @media(max-width: 440px) and (max-height: 750px){
   :root{--canvas-size:min(90vw, 350px);}
@@ -589,6 +598,15 @@ input[type=file]{display:none;}
         </div>
       </div>
       <div id="login-photo-updated-msg" style="font-size:11px;color:var(--green);font-family:'DM Mono',monospace;min-height:16px;"></div>
+      <div class="mobile-speed" id="mobile-speed-login">
+        <div class="mobile-speed-title">⚡ Speed Level</div>
+        <div class="mobile-speed-grid">
+          <div class="mobile-speed-btn" data-mspd="slow">🐢 Slow<span class="ms-badge">200ms</span></div>
+          <div class="mobile-speed-btn on" data-mspd="normal">🐍 Normal<span class="ms-badge">150ms</span></div>
+          <div class="mobile-speed-btn" data-mspd="fast">⚡ Fast<span class="ms-badge">90ms</span></div>
+          <div class="mobile-speed-btn" data-mspd="insane">🔥 Insane<span class="ms-badge">50ms</span></div>
+        </div>
+      </div>
       <button class="btn" id="btn-login-play" style="width:100%;">▶ &nbsp;That's me! Play</button>
       <button class="btn ghost" id="btn-login-back" style="width:100%;margin-top:0;">👤 &nbsp;Not me — switch player</button>
     </div>
@@ -1335,10 +1353,16 @@ function setLevel(lvl){
   chosenLevel=lvl;
   document.querySelectorAll('.spill').forEach(p=>p.classList.toggle('on',p.dataset.spd===lvl));
   document.querySelectorAll('.ov-spill').forEach(p=>p.classList.toggle('on',p.dataset.ospd===lvl));
+  document.querySelectorAll('.mobile-speed-btn').forEach(p=>p.classList.toggle('on',p.dataset.mspd===lvl));
   document.getElementById('speed-display').textContent=PRESETS[lvl].label;
 }
 document.querySelectorAll('.spill').forEach(p=>p.addEventListener('click',()=>{if(state==='running')return;setLevel(p.dataset.spd);}));
 document.querySelectorAll('.ov-spill').forEach(p=>p.addEventListener('click',()=>setLevel(p.dataset.ospd)));
+document.querySelectorAll('.mobile-speed-btn').forEach(p=>p.addEventListener('click',()=>{
+  if(state==='running') return;
+  setLevel(p.dataset.mspd);
+  document.querySelectorAll('.mobile-speed-btn').forEach(x=>x.classList.toggle('on',x.dataset.mspd===chosenLevel));
+}));
 
 // ══════════════════ BUTTON EVENTS ═══════════════
 document.getElementById('btn-save').addEventListener('click',()=>{
