@@ -396,13 +396,21 @@ input[type=file]{display:none;}
   .game-col{width:100%;max-width:460px;gap:7px;align-items:center;}
   .toolbar{box-sizing:border-box;width:100%;justify-content:center;flex-wrap:wrap;gap:5px;padding:5px 8px;font-size:10px;}
   /* Keep the game centered while using the available phone width. */
-  :root{--canvas-size:min(92vw, 450px);}
-  .canvas-wrap{max-width:calc(100vw - 20px);margin:0 auto;}
+  :root{--canvas-size:min(78vw, 330px);}
+  .canvas-wrap{width:var(--canvas-size);max-width:calc(100vw - 28px);margin:0 auto;}
   .canvas-wrap canvas{width:var(--canvas-size)!important;height:var(--canvas-size)!important;max-width:100%!important;}
+  .ov{padding:14px;gap:0;}
+  .ov-logo{font-size:21px;}
+  .ov-sub{font-size:9px;margin-bottom:11px;}
+  .field-label{font-size:9px;}
+  .name-input{padding:8px 11px;font-size:12px;margin-bottom:9px;}
+  .btn{padding:9px 0;font-size:12px;}
+  .keys-row{font-size:9px;margin-top:7px;}
+  .key{padding:2px 5px;font-size:9px;}
   .dpad-wrap{display:flex;transform:none;transform-origin:center top;margin:10px 0 6px;padding:10px 0 12px;gap:6px;}
   .dpad-row{gap:6px;}
-  .dpad-btn,.dpad-center{width:64px;height:64px;}
-  .dpad-btn{font-size:30px;border-radius:12px;}
+  .dpad-btn,.dpad-center{width:56px;height:56px;}
+  .dpad-btn{font-size:27px;border-radius:11px;}
   .footer{display:none;}
 }
 @media(max-width: 440px){
@@ -411,7 +419,7 @@ input[type=file]{display:none;}
   .mobile-lb-title{font-size:12px;}
   .mobile-lb-sub{font-size:8px;}
   .mobile-lb-card{min-height:120px;padding:6px 3px 7px;border-radius:9px;}
-  .mobile-lb-photo{width:38px;height:38px;}
+  .mobile-lb-photo{width:clamp(30px,8.5vw,38px);height:clamp(30px,8.5vw,38px);}
   .mobile-lb-rank{font-size:9px;}
   .mobile-lb-name{font-size:10.5px;}
   .mobile-lb-score{font-size:19px;}
@@ -423,19 +431,24 @@ input[type=file]{display:none;}
   .pill{font-size:9px;padding:3px 7px;}
   .topbar-score{display:none;}
   .app{padding:5px 7px 4px;}
-  :root{--canvas-size:min(92vw, 390px);}
-  .canvas-wrap{max-width:calc(100vw - 14px);}
+  :root{--canvas-size:min(76vw, 310px);}
+  .canvas-wrap{width:var(--canvas-size);max-width:calc(100vw - 20px);}
   .cel-card{padding:22px 18px;max-width:88%;}
   .cel-score-num{font-size:50px;}
-  .ov{padding:12px;}
+  .ov{padding:10px;}
+  .ov-logo{font-size:19px;}
+  .ov-sub{font-size:8px;margin-bottom:8px;}
+  .field-label{font-size:8.5px;}
+  .name-input{padding:7px 10px;font-size:11px;margin-bottom:7px;}
+  .btn{padding:8px 0;font-size:11.5px;}
   .mobile-speed{display:block;}
 }
 @media(max-width: 440px) and (max-height: 750px){
   :root{--canvas-size:min(90vw, 350px);}
   .game-col{gap:5px;}
   .dpad-wrap{margin-top:8px;margin-bottom:2px;padding-top:8px;padding-bottom:8px;}
-  .dpad-btn,.dpad-center{width:60px;height:60px;}
-  .dpad-btn{font-size:28px;}
+  .dpad-btn,.dpad-center{width:52px;height:52px;}
+  .dpad-btn{font-size:25px;}
   .toolbar{padding:3px 6px;font-size:9px;}
 }
 @supports (padding: max(0px)){
