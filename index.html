@@ -357,6 +357,47 @@ input[type=file]{display:none;}
 .mobile-lb-level{font:8px 'DM Mono',monospace;color:var(--muted);margin-top:2px;text-transform:lowercase;}
 .mobile-lb-empty{grid-column:1/-1;color:var(--muted);font:10px 'DM Mono',monospace;text-align:center;padding:8px 2px;}
 
+
+/* ══ MOBILE OVERLAY AUTO-FIT ══ */
+@media(max-width:820px){
+  .canvas-wrap.mobile-overlay-active{
+    height:auto!important;
+    min-height:0!important;
+    overflow:visible;
+  }
+  .canvas-wrap.mobile-overlay-active > canvas{
+    display:none!important;
+  }
+  .canvas-wrap.mobile-overlay-active .ov{
+    position:relative;
+    inset:auto;
+    width:100%;
+    min-height:0;
+    height:auto;
+    max-height:none;
+    overflow:visible;
+    border-radius:10px;
+  }
+  .canvas-wrap.mobile-overlay-active .ov.hide{
+    display:none;
+  }
+  .canvas-wrap.mobile-overlay-active .ov:not(.hide){
+    opacity:1;
+    pointer-events:auto;
+  }
+  .canvas-wrap.mobile-overlay-active .ov-login{
+    padding:14px 16px 16px!important;
+    gap:6px!important;
+  }
+  .canvas-wrap.mobile-overlay-active .ov-end{
+    padding:14px 16px 16px!important;
+    gap:0;
+  }
+  .canvas-wrap.mobile-overlay-active + .dpad-wrap{
+    display:none!important;
+  }
+}
+
 /* ══ MOBILE D-PAD ══ */
 .dpad-wrap{
   display:none;
@@ -1682,6 +1723,35 @@ if (window.firebaseReady) {
   // Safety net: if Firebase fails to load at all within 6s, boot anyway using local cache
   setTimeout(() => { if (!window.firebaseReady) boot(); }, 6000);
 }
+</script>
+<script>
+/* Mobile: the overlay is a card, not a fixed 310px canvas.
+   This prevents Game Over / Welcome panels from overflowing into the D-pad. */
+(function(){
+  const syncMobileOverlay = () => {
+    if(!window.matchMedia('(max-width: 820px)').matches) return;
+    const wrap=document.querySelector('.canvas-wrap');
+    const dpad=document.getElementById('dpad');
+    if(!wrap) return;
+    const active=wrap.querySelector('.ov:not(.hide)');
+    if(active){
+      wrap.classList.add('mobile-overlay-active');
+      if(dpad) dpad.style.display='none';
+    }else{
+      wrap.classList.remove('mobile-overlay-active');
+      if(dpad) dpad.style.display='';
+    }
+  };
+  const startObserver=()=>{
+    const wrap=document.querySelector('.canvas-wrap');
+    if(!wrap) return;
+    new MutationObserver(syncMobileOverlay).observe(wrap,{subtree:true,attributes:true,attributeFilter:['class','style']});
+    syncMobileOverlay();
+  };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',startObserver);
+  else startObserver();
+  window.addEventListener('resize',syncMobileOverlay);
+})();
 </script>
 </body>
 </html>
