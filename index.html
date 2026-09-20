@@ -36,6 +36,7 @@ body{
   justify-content:flex-start;overflow-x:hidden;
   -webkit-tap-highlight-color:transparent;
   touch-action:manipulation;
+  -webkit-user-select:none;user-select:none;
 }
 body::before{
   content:'';position:fixed;inset:0;
@@ -91,10 +92,10 @@ body::before{
 .sv{color:var(--text);font-weight:600;}
 .sep{color:var(--border);}
 .canvas-wrap{position:relative;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.04),0 20px 60px rgba(0,0,0,.55);}
-canvas{display:block;background:var(--surface);}
+canvas{display:block;background:var(--surface);touch-action:none;-webkit-user-select:none;user-select:none;}
 
 /* ── overlays ── */
-.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(26,26,42,.93);backdrop-filter:blur(7px);gap:0;transition:opacity .2s;padding:22px;overflow-y:auto;}
+.ov{position:absolute;inset:0;display:flex;pointer-events:auto;z-index:20;flex-direction:column;align-items:center;justify-content:center;background:rgba(26,26,42,.93);backdrop-filter:blur(7px);gap:0;transition:opacity .2s;padding:22px;overflow-y:auto;}
 .ov.hide{opacity:0;pointer-events:none;}
 .ov-logo{font-size:26px;font-weight:700;letter-spacing:-.6px;margin-bottom:3px;}
 .ov-sub{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:16px;}
@@ -123,8 +124,11 @@ input[type=file]{display:none;}
   -webkit-user-select:text!important;
   user-select:text!important;
   -webkit-touch-callout:default;
-  touch-action:manipulation;
+  touch-action:auto!important;
   cursor:text;
+  -webkit-appearance:none;
+  appearance:none;
+  -webkit-tap-highlight-color:transparent;
 }
 
 .name-input:focus{border-color:var(--accent);}
@@ -424,6 +428,7 @@ input[type=file]{display:none;}
   transition:background .1s,transform .08s;
   -webkit-tap-highlight-color:transparent;
   touch-action:manipulation;
+  -webkit-user-select:none;user-select:none;
 }
 .dpad-btn:active{background:rgba(162,89,255,.3);transform:scale(.93);}
 .dpad-center{width:52px;height:52px;background:transparent;border:none;}
@@ -660,7 +665,7 @@ input[type=file]{display:none;}
       Speed Level
     </div>
     <div class="spill" data-spd="slow">🐢 Slow <span class="badge">300ms</span></div>
-    <div class="spill on" data-spd="normal">🐍 Normal <span class="badge">2100ms</span></div>
+    <div class="spill on" data-spd="normal">🐍 Normal <span class="badge">250ms</span></div>
     <div class="spill" data-spd="fast">⚡ Fast <span class="badge">200ms</span></div>
     <div class="spill" data-spd="insane">🔥 Insane <span class="badge">100ms</span></div>
   </div>
@@ -719,7 +724,7 @@ input[type=file]{display:none;}
       <div class="field-label" style="margin-top:4px;">Speed Level</div>
       <div class="ov-speed-grid">
         <div class="ov-spill" data-ospd="slow">🐢 Slow<span class="badge">300ms</span></div>
-        <div class="ov-spill on" data-ospd="normal">🐍 Normal<span class="badge">2100ms</span></div>
+        <div class="ov-spill on" data-ospd="normal">🐍 Normal<span class="badge">250ms</span></div>
         <div class="ov-spill" data-ospd="fast">⚡ Fast<span class="badge">200ms</span></div>
         <div class="ov-spill" data-ospd="insane">🔥 Insane<span class="badge">100ms</span></div>
       </div>
@@ -748,7 +753,7 @@ input[type=file]{display:none;}
         <div class="mobile-speed-title">⚡ Speed Level</div>
         <div class="mobile-speed-grid">
           <div class="mobile-speed-btn" data-mspd="slow">🐢 Slow<span class="ms-badge">300ms</span></div>
-          <div class="mobile-speed-btn on" data-mspd="normal">🐍 Normal<span class="ms-badge">2100ms</span></div>
+          <div class="mobile-speed-btn on" data-mspd="normal">🐍 Normal<span class="ms-badge">250ms</span></div>
           <div class="mobile-speed-btn" data-mspd="fast">⚡ Fast<span class="ms-badge">200ms</span></div>
           <div class="mobile-speed-btn" data-mspd="insane">🔥 Insane<span class="ms-badge">100ms</span></div>
         </div>
@@ -837,7 +842,7 @@ input[type=file]{display:none;}
     </div>
     <div class="prow"><span class="pk">Length</span><span class="pv b" id="p-len">3</span></div>
     <div class="prow"><span class="pk">Score</span><span class="pv" id="p-score">0</span></div>
-    <div class="prow"><span class="pk">Speed</span><span class="pv" id="p-speed">2100ms</span></div>
+    <div class="prow"><span class="pk">Speed</span><span class="pv" id="p-speed">250ms</span></div>
     <div class="prow"><span class="pk">Tick</span><span class="pv" id="p-tick">0</span></div>
   </div>
   <div class="psec">
@@ -1149,18 +1154,6 @@ const startNameInput = document.getElementById('inp-name-start');
 startNameInput.addEventListener('keydown', e => {
   if(e.key==='Enter') document.getElementById('btn-lookup').click();
 });
-
-// Android/iPhone: explicitly focus the field when tapped.
-startNameInput.addEventListener('pointerdown', () => {
-  if(!startNameInput.disabled && !startNameInput.readOnly){
-    startNameInput.focus({preventScroll:true});
-  }
-});
-startNameInput.addEventListener('touchend', () => {
-  if(!startNameInput.disabled && !startNameInput.readOnly){
-    startNameInput.focus({preventScroll:true});
-  }
-}, {passive:true});
 
 document.getElementById('btn-lookup').addEventListener('click', () => {
   const name = startNameInput.value.trim();
@@ -1581,29 +1574,65 @@ function dpadPress(dx, dy){
   if(state!=='running') return;
   if(!(dx===-dir.x&&dy===-dir.y)) nextDir={x:dx,y:dy};
 }
-document.getElementById('dp-up')   .addEventListener('click',()=>dpadPress(0,-1));
-document.getElementById('dp-down') .addEventListener('click',()=>dpadPress(0,1));
-document.getElementById('dp-left') .addEventListener('click',()=>dpadPress(-1,0));
-document.getElementById('dp-right').addEventListener('click',()=>dpadPress(1,0));
 
-// Touch swipe on canvas
+// Use pointerdown for Android/iPhone. It reacts immediately to a finger tap
+// and avoids the delayed/sometimes-missed synthetic click on mobile browsers.
 (function(){
-  let tx0=0,ty0=0;
-  canvas.addEventListener('touchstart',e=>{
-    tx0=e.touches[0].clientX; ty0=e.touches[0].clientY;
-    e.preventDefault();
-  },{passive:false});
-  canvas.addEventListener('touchend',e=>{
-    const dx=e.changedTouches[0].clientX-tx0;
-    const dy=e.changedTouches[0].clientY-ty0;
-    if(Math.abs(dx)<10&&Math.abs(dy)<10){ ensureAC(); if(state!=='running') showStartScreen(playerName); return; }
-    if(Math.abs(dx)>Math.abs(dy)){
-      dpadPress(dx>0?1:-1, 0);
-    } else {
-      dpadPress(0, dy>0?1:-1);
+  const controls = [
+    ['dp-up',0,-1],['dp-down',0,1],['dp-left',-1,0],['dp-right',1,0]
+  ];
+  controls.forEach(([id,dx,dy])=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    const press=(e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      dpadPress(dx,dy);
+    };
+    if(window.PointerEvent){
+      el.addEventListener('pointerdown',press,{passive:false});
+    }else{
+      el.addEventListener('touchstart',press,{passive:false});
+      el.addEventListener('mousedown',press);
     }
-    e.preventDefault();
-  },{passive:false});
+  });
+})();
+
+// Touch swipe on the game canvas. Pointer events work on modern Android,
+// iPhone/iPad Safari and desktop browsers with touch screens.
+(function(){
+  let sx=0,sy=0,tracking=false;
+  const start=(x,y)=>{sx=x;sy=y;tracking=true;};
+  const finish=(x,y,e)=>{
+    if(!tracking) return;
+    tracking=false;
+    const dx=x-sx,dy=y-sy;
+    if(Math.abs(dx)<12&&Math.abs(dy)<12){
+      if(state!=='running') showStartScreen(playerName);
+      return;
+    }
+    if(Math.abs(dx)>Math.abs(dy)) dpadPress(dx>0?1:-1,0);
+    else dpadPress(0,dy>0?1:-1);
+    if(e) e.preventDefault();
+  };
+  if(window.PointerEvent){
+    canvas.addEventListener('pointerdown',e=>{
+      if(e.pointerType==='touch') { start(e.clientX,e.clientY); e.preventDefault(); }
+    },{passive:false});
+    canvas.addEventListener('pointerup',e=>{
+      if(e.pointerType==='touch') finish(e.clientX,e.clientY,e);
+    },{passive:false});
+    canvas.addEventListener('pointercancel',()=>{tracking=false;});
+  }else{
+    canvas.addEventListener('touchstart',e=>{
+      start(e.touches[0].clientX,e.touches[0].clientY);
+      e.preventDefault();
+    },{passive:false});
+    canvas.addEventListener('touchend',e=>{
+      finish(e.changedTouches[0].clientX,e.changedTouches[0].clientY,e);
+      e.preventDefault();
+    },{passive:false});
+  }
 })();
 
 // ══════════════════ FIREWORKS ═══════════════════
