@@ -440,6 +440,9 @@ input[type=file]{display:none;}
 
 /* ══ RESPONSIVE ══ */
 @media(max-width: 820px){
+  .topbar{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}
+  .mobile-leaderboard{box-shadow:none;}
+
   html,body{width:100%;min-height:100%;overflow-x:hidden;}
   .canvas-wrap .ov .name-input{
     pointer-events:auto!important;
@@ -489,7 +492,7 @@ input[type=file]{display:none;}
   .pill{font-size:9px;padding:3px 7px;}
   .topbar-score{display:none;}
   .app{padding:5px 7px 4px;}
-  :root{--canvas-size:min(76vw, 310px);}
+  :root{--canvas-size:min(76vw, 300px);}
   .canvas-wrap{width:var(--canvas-size);max-width:calc(100vw - 20px);}
   .cel-card{padding:22px 18px;max-width:88%;}
   .cel-score-num{font-size:50px;}
@@ -535,7 +538,10 @@ input[type=file]{display:none;}
   };
 
   const app = initializeApp(firebaseConfig);
-  const db = initializeFirestore(app, { experimentalForceLongPolling: true, useFetchStreams: false });
+  const db = initializeFirestore(app, {
+    experimentalAutoDetectLongPolling: true,
+    useFetchStreams: false
+  });
 
   window.snakeFetchRegistry = async function () {
     const snap = await getDoc(doc(db, "snakePlayers", "registry"));
@@ -1736,26 +1742,52 @@ document.getElementById('cel-continue').addEventListener('click',()=>{
 async function boot(){
   const btn = document.getElementById('btn-lookup');
   const inp = document.getElementById('inp-name-start');
-  btn.disabled = true; btn.textContent = 'Loading…';
-  // Keep the name field usable on Android/iPhone while Firebase loads.
+
+  // MOBILE-FIRST: show the game immediately from the device cache.
+  // Do not make the first screen wait for Firebase/network response.
+  try {
+    playerRegistry = loadLocalRegistryCache() || {};
+  } catch(e) {
+    playerRegistry = {};
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Next →';
   inp.placeholder = 'Your name…';
   inp.disabled = false;
   inp.readOnly = false;
-  await Promise.all([loadRegistryFromCloud(), loadLeaderboardFromCloud()]);
-  await reconcileRegistryWithLeaderboard();
-  btn.disabled = false; btn.textContent = 'Next →';
-  inp.placeholder = 'Your name…';
-  inp.disabled = false;
-  inp.readOnly = false;
-  init();draw();updateLayerState();renderLeaderboard();
-  // Final version: technical debug banner removed.
+
+  init();
+  draw();
+  updateLayerState();
+  renderLeaderboard();
+
+  // Sync Firebase in the background. The UI remains usable even on
+  // slow Android/iPhone networks or when the connection is delayed.
+  Promise.all([
+    loadRegistryFromCloud(),
+    loadLeaderboardFromCloud()
+  ]).then(async () => {
+    await reconcileRegistryWithLeaderboard();
+    renderLeaderboard();
+  }).catch(e => {
+    console.warn('Background Firebase sync failed:', e);
+  });
 }
 if (window.firebaseReady) {
   boot();
 } else {
-  window.addEventListener('firebaseReady', boot, { once: true });
-  // Safety net: if Firebase fails to load at all within 6s, boot anyway using local cache
-  setTimeout(() => { if (!window.firebaseReady) boot(); }, 6000);
+  // Start from local cache immediately; Firebase can finish loading later.
+  boot();
+  window.addEventListener('firebaseReady', () => {
+    // Firebase module is now ready; boot again only to refresh cloud data.
+    Promise.all([loadRegistryFromCloud(), loadLeaderboardFromCloud()])
+      .then(async () => {
+        await reconcileRegistryWithLeaderboard();
+        renderLeaderboard();
+      })
+      .catch(e => console.warn('Firebase background sync failed:', e));
+  }, { once: true });
 }
 </script>
 <script>
